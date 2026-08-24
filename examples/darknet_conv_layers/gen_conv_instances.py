@@ -15,7 +15,7 @@ def main() -> int:
                         default='yolov4_layers_full.txt')
     args = parser.parse_args()
 
-    # copy polymorphic conv2d to stdout
+    # copy polymorphic conv_2d_rem to stdout
     with open("../darknet/conv_remainder.remora", 'r') as f:
         print(";; start of conv_remainder.remora")
         for line in f:
@@ -53,11 +53,11 @@ def main() -> int:
             #     : [Float {output_depth} {output_combined}]
             #   (@conv2d (Float) ({n_minus_k} {win_dim} {input_depth} {output_depth} 1) in w)))
             # '''
-            defn_str = f'''(entry (conv-2d-rem/layer_{layer}
+            defn_str = f'''(entry (conv_2d_rem_layer_{layer}
                 (in [Float {input_depth} {input_dim} {input_dim}])
                 (w [Float {output_depth} {input_depth} {win_dim} {win_dim}])
                 : [Float {output_depth} {output_combined}])
-              (@conv-2d/rem _ ({q} {win_dim} {input_depth} {output_depth} {pad} {stride} {r}) in w))
+              (@conv_2d_rem _ ({q} {win_dim} {input_depth} {output_depth} {pad} {stride} {r}) in w))
             '''
             print(defn_str)
     return 0

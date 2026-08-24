@@ -1,5 +1,5 @@
 ;; Convolution that models darknet's truncating output-size division, so
-;; layers conv.remora's @conv-2d cannot express become expressible. That
+;; layers conv.remora's @conv_2d cannot express become expressible. That
 ;; encoding needs (n - k) divisible by $s and padding a multiple of $s, which
 ;; rules out e.g. darknet's 3x3 / stride 2 / pad 1 on a 608x608 input.
 ;;
@@ -19,79 +19,79 @@
 (def (fun (@replicate (&t) (@f @s) (in [&t @s]) : [&t @f @s])
     ((array [] (fn ((x [Int])) in)) (i-app iota/static [@f]))))
 
-(def (fun (@pad/2 (&t) ($n $p) (in [&t $n $n])
+(def (fun (@pad_2 (&t) ($n $p) (in [&t $n $n])
                             (zero [&t]) : [&t (+ $n $p $p) (+ $n $p $p)])
-    (let ((val (vert-pad : [&t $p (+ $p $p $n)]) (@replicate (&t) ([$p (+ $p $p $n)] []) zero))
-          (val (hor-pad : [&t $p]) (@replicate (&t) ([$p] []) zero)))
+    (let ((val (vert_pad : [&t $p (+ $p $p $n)]) (@replicate (&t) ([$p (+ $p $p $n)] []) zero))
+          (val (hor_pad : [&t $p]) (@replicate (&t) ([$p] []) zero)))
       (@append (&t) ($p (+ $n $p) [(+ $p $p $n)])
-         vert-pad
+         vert_pad
          (@append (&t) ($n $p [(+ $p $p $n)])
-           (@append (&t) ($p (+ $n $p) []) hor-pad (@append (&t) ($n $p []) in hor-pad))
-           vert-pad)))))
+           (@append (&t) ($p (+ $n $p) []) hor_pad (@append (&t) ($n $p []) in hor_pad))
+           vert_pad)))))
 
-(def (i-fun (idxs-of/2 ($m $n) : [Int $m $n 2])
+(def (i-fun (idxs_of_2 ($m $n) : [Int $m $n 2])
      ((fn ((i [Int]))
         ((fn ((j [Int])) [i j]) (i-app iota/static [$n])))
       (i-app iota/static [$m]))))
 
-(def (fun (@subarray/2 (&t) ($in-out $m $s)
-                    (in [&t (+ $in-out (* $m $s) 1) (+ $in-out (* $m $s) 1)])
+(def (fun (@subarray_2 (&t) ($in_out $m $s)
+                    (in [&t (+ $in_out (* $m $s) 1) (+ $in_out (* $m $s) 1)])
                     (offset [Int 2]) : [&t (+ $m 1) (+ $m 1)])
-     (@index2d (&t) ((+ $in-out (* $m $s) 1) (+ $in-out (* $m $s) 1))
+     (@index2d (&t) ((+ $in_out (* $m $s) 1) (+ $in_out (* $m $s) 1))
                     in
                      (+ (@replicate (Int) ([(+ $m 1) (+ $m 1)] [2]) offset)
-                        (* (@reify-dim _ ($s)) (i-app idxs-of/2 (+ $m 1) (+ $m 1)))))))
+                        (* (@reify-dim _ ($s)) (i-app idxs_of_2 (+ $m 1) (+ $m 1)))))))
 
-(def (fun (@lifted-subarray/2 (&t) (@shape $in-out $m $s)
-                        (in [&t (+ $in-out (* $m $s) 1) (+ $in-out (* $m $s) 1)])
+(def (fun (@lifted_subarray_2 (&t) (@shape $in_out $m $s)
+                        (in [&t (+ $in_out (* $m $s) 1) (+ $in_out (* $m $s) 1)])
                         (offset [Int @shape 2]) : [&t @shape (+ $m 1) (+ $m 1)])
-     (@subarray/2 (&t) ($in-out $m $s) in offset)))
+     (@subarray_2 (&t) ($in_out $m $s) in offset)))
 
-(def (fun (@dot _ ($n-1) (v [Float (+ 1 $n-1)]) (w [Float (+ 1 $n-1)]) : [Float])
-    (@reduce (Float) ($n-1 []) f.+ (f.* v w))))
+(def (fun (@dot _ ($n_1) (v [Float (+ 1 $n_1)]) (w [Float (+ 1 $n_1)]) : [Float])
+    (@reduce (Float) ($n_1 []) f.+ (f.* v w))))
 
-(def (fun (@lifted_dot _ ($m-1 $o) (v [Float (+ 1 $m-1)]) (M [Float (+ 1 $m-1) $o]) : [Float $o])
-    (@dot _ ($m-1) v (@transpose2d (Float) ((+ 1 $m-1) $o) M))))
+(def (fun (@lifted_dot _ ($m_1 $o) (v [Float (+ 1 $m_1)]) (M [Float (+ 1 $m_1) $o]) : [Float $o])
+    (@dot _ ($m_1) v (@transpose2d (Float) ((+ 1 $m_1) $o) M))))
 
-(def (fun (@matmul _ ($n $m-1 $o) (xss [Float $n (+ 1 $m-1)])
-                               (yss [Float (+ 1 $m-1) $o]) : [Float $n $o])
-      (@lifted_dot _ ($m-1 $o) xss yss)))
+(def (fun (@matmul _ ($n $m_1 $o) (xss [Float $n (+ 1 $m_1)])
+                               (yss [Float (+ 1 $m_1) $o]) : [Float $n $o])
+      (@lifted_dot _ ($m_1 $o) xss yss)))
 
 ;; ----------------- CONVOLUTION WITH REMAINDER -------------------------
 
-(def (fun (@im2col/rem _ ($q $k $pad $in-c $s $r)
-                  (im [Float $in-c (- (+ (* $q $s) $k $r) $pad $pad) (- (+ (* $q $s) $k $r) $pad $pad)])
-                  : [Float (* $in-c $k $k) (* (+ $q 1) (+ $q 1))])
-      (@flatten (Float) ($in-c (* $k $k) [(* (+ $q 1) (+ $q 1))])
+(def (fun (@im2col_rem _ ($q $k $pad $in_c $s $r)
+                  (im [Float $in_c (- (+ (* $q $s) $k $r) $pad $pad) (- (+ (* $q $s) $k $r) $pad $pad)])
+                  : [Float (* $in_c $k $k) (* (+ $q 1) (+ $q 1))])
+      (@flatten (Float) ($in_c (* $k $k) [(* (+ $q 1) (+ $q 1))])
         (@flatten (Float) ($k $k [(* (+ $q 1) (+ $q 1))])
           (@flatten (Float) ((+ $q 1) (+ $q 1) [])
-             (@lifted-subarray/2 (Float) ([$k $k] (- (+ $k $r) 1) $q $s)
-               (@pad/2 (Float) ((- (+ (* $q $s) $k $r) $pad $pad) $pad) im 0.0)
-                 (@replicate (Int) ([$in-c] [$k $k 2])
-                   (i-app idxs-of/2 $k $k))))))))
+             (@lifted_subarray_2 (Float) ([$k $k] (- (+ $k $r) 1) $q $s)
+               (@pad_2 (Float) ((- (+ (* $q $s) $k $r) $pad $pad) $pad) im 0.0)
+                 (@replicate (Int) ([$in_c] [$k $k 2])
+                   (i-app idxs_of_2 $k $k))))))))
 
-(def (fun (@conv-2d/rem _ ($q $k $in-c $out-c $pad $s $r)
-                (in [Float $in-c (- (+ (* $q $s) $k $r) $pad $pad) (- (+ (* $q $s) $k $r) $pad $pad)])
-                (w  [Float $out-c $in-c $k $k])
-                : [Float $out-c (* (+ $q 1) (+ $q 1))])
-    (@matmul _ ($out-c (- (* $k $k $in-c) 1) (* (+ $q 1) (+ $q 1)))
-             (@flatten (Float) ($in-c (* $k $k) [])
+(def (fun (@conv_2d_rem _ ($q $k $in_c $out_c $pad $s $r)
+                (in [Float $in_c (- (+ (* $q $s) $k $r) $pad $pad) (- (+ (* $q $s) $k $r) $pad $pad)])
+                (w  [Float $out_c $in_c $k $k])
+                : [Float $out_c (* (+ $q 1) (+ $q 1))])
+    (@matmul _ ($out_c (- (* $k $k $in_c) 1) (* (+ $q 1) (+ $q 1)))
+             (@flatten (Float) ($in_c (* $k $k) [])
                 (@flatten (Float) ($k $k []) w))
-             (@im2col/rem _ ($q $k $pad $in-c $s $r) in))))
+             (@im2col_rem _ ($q $k $pad $in_c $s $r) in))))
 
 ;; darknet yolov4.cfg layer 1: size=3 stride=2 pad=1, 3 -> 64 channels,
 ;; 608x608 -> 304x304. n + 2*pad - k = 608 + 2 - 3 = 607 = 303*2 + 1, so
 ;; $q = 303 and $r = 1, giving out = 304. The derived input size is
 ;; 303*2 + 3 + 1 - 1 - 1 = 608. Typechecked as part of this file.
 ;; not run, since the weights are placeholders and sizes are too large
-(def (fun (@darknet-layer1 _ () (im [Float 3 608 608]) : [Float 64 (* 304 304)])
-    (@conv-2d/rem _ (303 3 3 64 1 2 1) im (@undefined (Float) ([64 3 3 3])))))
+(def (fun (@darknet_layer1 _ () (im [Float 3 608 608]) : [Float 64 (* 304 304)])
+    (@conv_2d_rem _ (303 3 3 64 1 2 1) im (@undefined (Float) ([64 3 3 3])))))
 
 ;; Small runnable check: 5x5 input, 2x2 kernel, stride 2, no padding.
 ;; 5 - 2 = 3 = 1*2 + 1, so $q = 1, $r = 1 and the output is 2x2
-;; @conv-2d cannot express this one either: it needs (5 - 2)/2 as $n-k.
+;; @conv_2d cannot express this one either: it needs (5 - 2)/2 as $n-k.
 ;; Expected output: [[12 20 52 60]]
 (entry (main)
-  (@conv-2d/rem _ (1 2 1 1 0 2 1)
+  (@conv_2d_rem _ (1 2 1 1 0 2 1)
     (i->f (i-app iota/static [1 5 5]))
     [[[[1.0 1.0] [1.0 1.0]]]]))
