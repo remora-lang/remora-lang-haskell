@@ -21,6 +21,11 @@ import VName
 compileFunName :: VName -> F.Name
 compileFunName = F.nameFromText . prettyText
 
+escIfReserved :: T.Text -> T.Text
+escIfReserved v = if v `elem` reserved then v <> "_" else v
+  where
+    reserved = ["true", "false", "if", "then", "else", "def", "let", "loop", "in", "for", "do", "with", "types"]
+
 retAls :: Int -> Int -> F.RetAls
 retAls params results = F.RetAls [0 .. params - 1] [0 .. results - 1]
 
@@ -292,7 +297,7 @@ addEntry name params body = do
       }
   where
     entryParam p =
-      F.EntryParam (F.nameFromText $ varName $ patVar p) F.Nonunique
+      F.EntryParam (F.nameFromText $ escIfReserved $ varName $ patVar p) F.Nonunique
         <$> entryPointType (arrayTypeOf p)
 
 compileDecl :: Decl -> FutharkM ()
