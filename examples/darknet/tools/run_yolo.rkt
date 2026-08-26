@@ -57,7 +57,7 @@
   (define exec (format "~a -b > ~a" (exec-file) (output)))
 
   (define weights-bin (subbytes (file->bytes (weights-file)) 20))
-  (println "read stuff")
+  (println "read weights")
   (define layer-sizes (map (lambda (x) (* 4 (apply * (third x)))) args-clean))
   (define layers-weights (split-bin-into-layers weights-bin layer-sizes))
   (define weights-data (apply bytes-append (map bin->futhark-bin layers-weights (map third args-clean))))
@@ -65,22 +65,23 @@
   (define data (bytes-append img-data weights-data))
   (println (bytes-length data))
 
-  (println "made data")
-  (match-define (list in-p out-p _ in-err h)
-    (process exec))
-  (println "made a process")
-  (match (h 'status)
-    ['done-error (println (port->string in-err))]
-    ['done-ok (println "success")]
-    ['running (println "running")])
+  (println "formatted binary data")
+  (time
+    (match-define (list in-p out-p _ in-err h)
+      (process exec))
+    (println "started yolo process")
+    (match (h 'status)
+      ['done-error (println (port->string in-err))]
+      ['done-ok (println "success")]
+      ['running (println "running")])
 
-  (write-bytes data out-p)
-  (close-output-port out-p)
-  (println "wrote data")
-  (h 'status)
-  (h 'wait)
-  (match (h 'status)
-    ['done-error (println (port->string in-err))]
-    ['done-ok (println "success")])
-  (println "writing output")
-  (copy-port in-p (current-output-port)))
+    (write-bytes data out-p)
+    (close-output-port out-p)
+    (println "wrote binary data to process")
+    (h 'status)
+    (h 'wait)
+    (match (h 'status)
+      ['done-error (println (port->string in-err))]
+      ['done-ok (println "success")])
+    (println "writing output")
+    (copy-port in-p (current-output-port))))
